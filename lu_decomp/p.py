@@ -31,10 +31,22 @@ def main():
 
     n = random.randint(2, 7)
     a = get_matrix(n, str)
+    b = get_b(n, str)
     pluq = get_pivot_q_lu(a)
 
     if (is_zero_det(pluq)):
         print("matrix has zero det")
+        x = np.linalg.lstsq(a, b)[0]
+        x = np.array(x)
+        print("one solution x: ")
+        print(x)
+        #
+        print("a * x")
+        print(a @ x)
+        print("b")
+        print(b)
+        #
+        correct(np.allclose(a @ x, b), "one solution")
         os._exit(-1)
 
     print("A: ")
@@ -49,8 +61,6 @@ def main():
     print(pluq[2])
     correct(np.allclose(pluq[0][0] @ a @ pluq[3][0], pluq[1] @ pluq[2]), "PLUQ decomposition")
 
-
-    b = get_b(n, str)
     print("b:")
     print(b)
     x = solve_sys_q(a, b, pluq)
@@ -66,6 +76,9 @@ def main():
     print("a inversed:")
     print(a_i)
     correct(np.allclose(a_i, la.inv(a)), "inversion")
+
+    print("cond number")
+    print(np.linalg.cond(a))
 
 def pivot(a):
     n = (a.shape)[0]
