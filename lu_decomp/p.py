@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.linalg as la
 import random
+from functools import reduce
+import os
 
 def get_b(n, str):
     if (str == "r"):
@@ -31,6 +33,10 @@ def main():
     a = get_matrix(n, str)
     pluq = get_pivot_q_lu(a)
 
+    if (is_zero_det(pluq)):
+        print("matrix has zero det")
+        os._exit(-1)
+
     print("A: ")
     print(a)
     print("P: ")
@@ -41,7 +47,7 @@ def main():
     print(pluq[1])
     print("U: ")
     print(pluq[2])
-    correct(np.allclose(pluq[0] @ a @ pluq[3], pluq[1] @ pluq[2]), "PLUQ decomposition")
+    correct(np.allclose(pluq[0][0] @ a @ pluq[3][0], pluq[1] @ pluq[2]), "PLUQ decomposition")
 
 
     b = get_b(n, str)
@@ -65,20 +71,24 @@ def pivot(a):
     n = (a.shape)[0]
     a1 = a.copy()
     id = [[float(i == j) for i in range(n)] for j in range(n)]
+    id_det = 1
     for i in range(n):
         maxc, row = a1[i][i], i
         for j in range(i, n):
             if (a1[j][i] > maxc):
                 maxc, row = a1[j][i], j
         if (i != row):
+            id_det *= -1
             id[i], id[row] = id[row], id[i]
             tmp = a1[row]
             a1[row] = a1[i]
             a1[i] = tmp
-    return np.array(id)
+
+    return (np.array(id), id_det)
 
 def pivot_q(a):
-    return pivot(a.T).T
+    t = pivot(a.T)
+    return (t[0].T, t[1])
 
 def get_lu(a):
     n = (a.shape)[0]
@@ -100,32 +110,80 @@ def get_lu(a):
 
 def get_pivot_lu(a):
     p = pivot(a)
-    return [p] + get_lu(p @ a)
+    return [p] + get_lu(p[0] @ a)
 
 def get_pivot_q_lu(a):
     q = pivot_q(a)
-    return get_pivot_lu(a @ q) + [q]
+    return get_pivot_lu(a @ q[0]) + [q]
+
+def has_nan(a):
+    n = a.shape[0]
+    for i in range(n):
+        for j in range(n):
+            if np.isnan(a[i][j]):
+                return True
+    return False
+
+def is_zero_det(pluq):
+    if (has_nan(pluq[1]) or has_nan(pluq[2])):
+        return True
+    return False
+
+def solve_sys_tr_l(a, b):
+    x = []
+    n = a.shape[0]
+    x.append(b[0] / a[0][0])
+    for i in range(1, n):
+        x.append( (b[i] - sum(a[i][j] * x[j] for j in range(i)))/a[i][i] )
+    return np.array(x)
+
+def solve_sys_tr_r(a, b):
+    x = []
+    n = a.shape[0]
+    x = [0.0 for i in range(n)]
+    x[n-1] = b[n-1] / a[n-1][n-1]
+    for i in range(n-2, -1, -1):
+        x[i] = (b[i] - sum(a[i][j] * x[j] for j in range(i+1, n)))/a[i][i]
+    return np.array(x)
 
 def solve_sys(a, b, plu=None):
     if (plu == None):
         plu = get_pivot_lu(a)
-    y = la.solve(plu[1], plu[0] @ b)
-    return la.solve(plu[2], y)
+
+    #y = la.solve(plu[1], plu[0][0] @ b)
+    y = solve_sys_tr_l(plu[1], plu[0][0] @ b)
+    #return la.solve(plu[2], y)
+    return solve_sys_tr_r(plu[2], y)
 
 def solve_sys_q(a, b, pluq=None):
     if (pluq == None):
         pluq = get_pivot_q_lu(a)
-    y = la.solve(pluq[1], pluq[0] @ b)
+    '''
+    y = la.solve(pluq[1], pluq[0][0] @ b)
     x = la.solve(pluq[2], y)
-    return pluq[3] @ x
+    return pluq[3][0] @ x
+    '''
+    y = solve_sys_tr_l(pluq[1], pluq[0][0] @ b)
+    x = solve_sys_tr_r(pluq[2], y)
+    return pluq[3][0] @ x
+
+def det_of_tr(a):
+    n = a.shape[0]
+    res = 1
+    for i in range(n):
+        res *= a[i][i]
+    return res
 
 def det(a, pluq=None):
     if (pluq == None):
         pluq = get_pivot_q_lu(a)
+    '''
     res = 1
     for i in range(4):
         res *= la.det(pluq[i])
     return res
+    '''
+    return pluq[0][1] * det_of_tr(pluq[1]) * det_of_tr(pluq[2]) * pluq[3][1]
 
 def inv(a, pluq=None):
     if (pluq == None):
@@ -138,6 +196,7 @@ def inv(a, pluq=None):
         #solve_sys_q(a, e, pluq)
         res.append(solve_sys_q(a, e, pluq))
     return np.array(res).T
+
 main()
 
 '''
