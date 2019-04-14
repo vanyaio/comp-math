@@ -210,7 +210,8 @@ def inv(a, pluq=None):
         res.append(solve_sys_q(a, e, pluq))
     return np.array(res).T
 
-main()
+if __name__ == "__main__":
+    main()
 
 '''
 a = get_matrix()
