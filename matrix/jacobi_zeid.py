@@ -4,10 +4,12 @@ import random
 from functools import reduce
 import os
 import lu
+import math
+
 
 def gen_a(q):
     n = random.randint(2, 7)
-    long = 100000
+    long = 1000
 
     r1 = -100.0
     r2 = -r1
@@ -32,7 +34,7 @@ def main():
     print("Rand(r) or stdin(s)?")
     str = input()
     if (str == "r"):
-        q = random.randint(2, 5)
+        q = random.randint(3, 6)
         a = gen_a(q)
         b = gen_b(a.shape[0])
     else:
@@ -45,13 +47,19 @@ def main():
     x = jacobi(a, b)
     print(a @ x[0])
     print(b)
+    print("prior:")
     print(x[1])
+    print("posterior:")
+    print(x[2])
 
     print("_____")
     x = zeid(a, b)
     print(a @ x[0])
     print(b)
+    print("prior:")
     print(x[1])
+    print("posterior:")
+    print(x[2])
 
     #print(la.norm(a))
 
@@ -65,35 +73,56 @@ def jacobi(a, b, eps=0.000001):
 
     norm = la.norm(d_inv @ r)
     k = 0
+    k_prior = 0
+    x0 = np.array([0.0 for i in range(n)])
+    x1 = []
     while True:
-        x1 = d_inv @ (b - (r @ x))
+        xk = d_inv @ (b - (r @ x))
         k += 1
-        if (norm < 0.5) and (la.norm(x1 - x) < eps):
-            return (x1, k)
-        if (norm >= 0.5) and (la.norm(x1 - x) <= ((1-norm)/norm) * eps):
-            return (x1, k)
-        x = x1
+        '''
+        if (not flag_prior) and (norm < 0.5) and (la.norm(x1 - x) < eps):
+            flag_prior = True
+            k_prior = k
+        if (not flag_prior) and (norm >= 0.5) and (la.norm(x1 - x) <= ((1-norm)/norm) * eps):
+            flag_prior = True
+            k_prior = k
+        if (not flag_post) and (la.norm((a @ x1) - b) < eps):
+            flag_post = True
+            k_post = k
+        '''
+
+        if (k == 1):
+            x1 = xk
+            k_prior = math.ceil(np.log((eps / la.norm(x1 - x0)) * (1 - norm))/np.log(norm))
+
+        if ((la.norm(xk - x) <= ((1-norm)/norm) * eps)):
+            return (xk, k_prior, k)
+        x = xk
 
 def zeid(a, b, eps=0.000001):
     n = a.shape[0]
     x = np.array([0.0 for i in range(n)])
 
-    l_inv = np.array([[1.0 / a[i][i] if (i == j) else 0.0 for j in range(n)] for i in range(n)])
+    #l_inv = np.array([[1.0 / a[i][i] if (i == j) else 0.0 for j in range(n)] for i in range(n)])
     u = [[a[i][j] if (i < j) else 0.0 for j in range(n)] for i in range(n)]
+    l = a - u
+    l_inv = la.inv(l)
 
     norm = la.norm(l_inv @ u)
     k = 0
-
-    x1 = np.array([])
+    k_prior = 0
     x0 = np.array([0.0 for i in range(n)])
+    x1 = []
     while True:
-        x = l_inv @ (b - (u @ x))
+        xk = l_inv @ (b - (u @ x))
         k += 1
         if (k == 1):
-            x1 = x
-        q = (norm ** k)
-        if (q * la.norm(x1 - x0) < (1 - norm)*eps):
-            return (x, k)
+            x1 = xk
+            k_prior = math.ceil(np.log((eps / la.norm(x1 - x0)) * (1 - norm))/np.log(norm))
+
+        if ((la.norm(xk - x) <= ((1-norm)/norm) * eps)):
+            return (xk, k_prior, k)
+        x = xk
 
 if __name__ == "__main__":
     main()
