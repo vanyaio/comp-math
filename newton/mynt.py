@@ -151,25 +151,30 @@ def main():
     x = nt(f, j, x0)
     print(x)
     print(apply(f, x[0], 1))
-
+    print(lu.Counter)
+    lu.Counter = 0
     print('-'*20)
     x = mod_nt(f, j, x0)
     print(x)
     print(apply(f, x[0], 1))
-
+    print(lu.Counter)
+    lu.Counter = 0
     print('-'*20)
     swap_step = 3
     x = sw_nt(f, j, x0, swap_step)
     print('swap on step: ' + str(swap_step))
     print(x)
     print(apply(f, x[0], 1))
-
+    print(lu.Counter)
+    lu.Counter = 0
     print('-'*20)
-    each_step = 3
+    each_step = 5
     print('swap each ' + str(each_step) + 'th step')
     x = hybr_nt(f, j, x0, each_step)
     print(x)
     print(apply(f, x[0], 1))
+    print(lu.Counter)
+    lu.Counter = 0
 
 def nt_r1(f, fd=None, eps=0.000001, x0=None):
     while True:
@@ -198,12 +203,13 @@ def nt(f, j, x0, eps=0.000001):
 
 def mod_nt(f, j, x0, eps=0.000001):
     j0 = apply(j, x0, 2)
+    pluq = lu.get_pivot_q_lu(j0)
     xk = x0
     k = 0
     while True:
         k += 1
         fk = -apply(f, xk, 1)
-        delta = lu.solve_sys_q(j0, fk)
+        delta = lu.solve_sys_q(j0, fk, pluq)
         xk = delta + xk
         if la.norm(delta) < eps:
             return (xk, k)
@@ -223,13 +229,15 @@ def sw_nt(f, j, x0, ks, eps=0.000001):
 def hybr_nt(f, j, x0, step, eps=0.000001):
     k = 0
     xk = x0
-    js = []
+    js = 0
+    pluq = 0
     while True:
         if (k%step == 0):
             js = apply(j, xk, 2)
+            pluq = lu.get_pivot_q_lu(js)
         k += 1
         fk = -apply(f, xk, 1)
-        delta = lu.solve_sys_q(js, fk)
+        delta = lu.solve_sys_q(js, fk, pluq)
         xk = delta + xk
         if la.norm(delta) < eps:
             return (xk, k)

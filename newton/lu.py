@@ -4,6 +4,7 @@ import random
 from functools import reduce
 import os
 
+Counter = 0
 def get_b(n, str):
     if (str == "r"):
         arr = [random.uniform(-100, 100) for i in range(n)]
@@ -97,13 +98,21 @@ def pivot(a):
             a1[row] = a1[i]
             a1[i] = tmp
 
+    global Counter
+    Counter += (n*n)
     return (np.array(id), id_det)
 
 def pivot_q(a):
     t = pivot(a.T)
+
+    global Counter
+    n = a.shape[0]
+    Counter += (n*n)
     return (t[0].T, t[1])
 
 def get_lu(a):
+    global Counter
+
     n = (a.shape)[0]
     l = [[0.0 for x in range(n)] for y in range(n)]
     u = [[0.0 for x in range(n)] for y in range(n)]
@@ -114,19 +123,43 @@ def get_lu(a):
         for i in range(j + 1):
             s1 = sum(u[k][j] * l[i][k] for k in range(i))
             u[i][j] = a[i][j] - s1
+            Counter += (2 * i + 1)
 
         for i in range(j, n):
             s2 = sum(u[k][j] * l[i][k] for k in range(j))
             l[i][j] = (a[i][j] - s2) / u[j][j]
+            Counter = (2 * i + 2)
 
     return [np.array(l), np.array(u)]
 
 def get_pivot_lu(a):
     p = pivot(a)
+
+    global Counter
+    Counter += c_dot(a.shape[0])
     return [p] + get_lu(p[0] @ a)
 
+def c_dot(n):
+    return (n+n)*n
+'''
+def c_gpq(n):
+    c = 0
+    #pivot_q:
+    c += n**2 #a.t
+    c += k * (n**2)#pivot
+    #a @ q[0]
+    c += c_dot(n)
+    #get_pivot_lu:
+    c += k * (n**2)#pivot
+    c += c_dot(n)#p[0] @ a
+    #get_lu
+    c += 2*(n**2)#gen
+'''
 def get_pivot_q_lu(a):
     q = pivot_q(a)
+
+    global Counter
+    Counter += c_dot(a.shape[0])
     return get_pivot_lu(a @ q[0]) + [q]
 
 def has_nan(a):
@@ -146,8 +179,10 @@ def solve_sys_tr_l(a, b):
     x = []
     n = a.shape[0]
     x.append(b[0] / a[0][0])
+    global Counter
     for i in range(1, n):
         x.append( (b[i] - sum(a[i][j] * x[j] for j in range(i)))/a[i][i] )
+        Counter += (2*i + 2)
     return np.array(x)
 
 def solve_sys_tr_r(a, b):
@@ -155,19 +190,31 @@ def solve_sys_tr_r(a, b):
     n = a.shape[0]
     x = [0.0 for i in range(n)]
     x[n-1] = b[n-1] / a[n-1][n-1]
+    global Counter
+    Counter += (n + 1)
     for i in range(n-2, -1, -1):
         x[i] = (b[i] - sum(a[i][j] * x[j] for j in range(i+1, n)))/a[i][i]
+        Counter += ((n-i)*2 + 1)
     return np.array(x)
 
 def solve_sys(a, b, plu=None):
     if (plu == None):
         plu = get_pivot_lu(a)
 
-    #y = la.solve(plu[1], plu[0][0] @ b)
     y = solve_sys_tr_l(plu[1], plu[0][0] @ b)
-    #return la.solve(plu[2], y)
+    global Counter
+    Counter += c_dot(a.shape[0])
     return solve_sys_tr_r(plu[2], y)
-
+'''
+def c_sst(n):
+    return 2*n + 2*(n*(n-1)/2)
+def c_ssq(n, has_pluq):
+    c = 0
+    if not has_pluq:
+        c += c_gpq(n)
+    c += 2*c_sst(n)
+    c += 2*c_dot(n)
+'''
 def solve_sys_q(a, b, pluq=None):
     if (pluq == None):
         pluq = get_pivot_q_lu(a)
@@ -177,7 +224,10 @@ def solve_sys_q(a, b, pluq=None):
     return pluq[3][0] @ x
     '''
     y = solve_sys_tr_l(pluq[1], pluq[0][0] @ b)
+    global Counter
+    Counter += c_dot(a.shape[0])
     x = solve_sys_tr_r(pluq[2], y)
+    Counter += c_dot(a.shape[0])
     return pluq[3][0] @ x
 
 def det_of_tr(a):
