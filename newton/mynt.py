@@ -150,11 +150,26 @@ def main():
     x0 = get_x0()
     x = nt(f, j, x0)
     print(x)
-    print(apply(f, x, 1))
+    print(apply(f, x[0], 1))
+
     print('-'*20)
     x = mod_nt(f, j, x0)
     print(x)
-    print(apply(f, x, 1))
+    print(apply(f, x[0], 1))
+
+    print('-'*20)
+    swap_step = 3
+    x = sw_nt(f, j, x0, swap_step)
+    print('swap on step: ' + str(swap_step))
+    print(x)
+    print(apply(f, x[0], 1))
+
+    print('-'*20)
+    each_step = 3
+    print('swap each ' + str(each_step) + 'th step')
+    x = hybr_nt(f, j, x0, each_step)
+    print(x)
+    print(apply(f, x[0], 1))
 
 def nt_r1(f, fd=None, eps=0.000001, x0=None):
     while True:
@@ -171,24 +186,53 @@ def apply(fm, x, dim):
 
 def nt(f, j, x0, eps=0.000001):
     xk = x0
+    k = 0
     while True:
+        k += 1
         jk = apply(j, xk, 2)
         fk = -apply(f, xk, 1)
         delta = lu.solve_sys_q(jk, fk)
         xk = delta + xk
         if la.norm(delta) < eps:
-            return xk
+            return (xk, k)
 
 def mod_nt(f, j, x0, eps=0.000001):
     j0 = apply(j, x0, 2)
     xk = x0
+    k = 0
     while True:
+        k += 1
         fk = -apply(f, xk, 1)
         delta = lu.solve_sys_q(j0, fk)
         xk = delta + xk
         if la.norm(delta) < eps:
-            return xk
+            return (xk, k)
 
+def sw_nt(f, j, x0, ks, eps=0.000001):
+    xk = x0
+    for k in range(ks):
+        jk = apply(j, xk, 2)
+        fk = -apply(f, xk, 1)
+        delta = lu.solve_sys_q(jk, fk)
+        xk = delta + xk
+        if la.norm(delta) < eps:
+            return (xk, k+1)
+    x = mod_nt(f, j, xk, eps=eps)
+    return (x[0], x[1] + ks)
+
+def hybr_nt(f, j, x0, step, eps=0.000001):
+    k = 0
+    xk = x0
+    js = []
+    while True:
+        if (k%step == 0):
+            js = apply(j, xk, 2)
+        k += 1
+        fk = -apply(f, xk, 1)
+        delta = lu.solve_sys_q(js, fk)
+        xk = delta + xk
+        if la.norm(delta) < eps:
+            return (xk, k)
 if __name__ == "__main__":
     main()
 
