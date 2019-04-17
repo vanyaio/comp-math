@@ -99,7 +99,7 @@ def pivot(a):
             a1[i] = tmp
 
     global Counter
-    Counter += (n*n)
+    Counter += 2*(n*n)
     return (np.array(id), id_det)
 
 def pivot_q(a):
@@ -128,7 +128,7 @@ def get_lu(a):
         for i in range(j, n):
             s2 = sum(u[k][j] * l[i][k] for k in range(j))
             l[i][j] = (a[i][j] - s2) / u[j][j]
-            Counter = (2 * i + 2)
+            Counter += (2 * i + 2)
 
     return [np.array(l), np.array(u)]
 

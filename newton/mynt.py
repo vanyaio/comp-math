@@ -160,7 +160,7 @@ def main():
     print(lu.Counter)
     lu.Counter = 0
     print('-'*20)
-    swap_step = 3
+    swap_step = 4
     x = sw_nt(f, j, x0, swap_step)
     print('swap on step: ' + str(swap_step))
     print(x)
@@ -168,7 +168,7 @@ def main():
     print(lu.Counter)
     lu.Counter = 0
     print('-'*20)
-    each_step = 5
+    each_step = 4
     print('swap each ' + str(each_step) + 'th step')
     x = hybr_nt(f, j, x0, each_step)
     print(x)
