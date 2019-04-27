@@ -156,7 +156,7 @@ def print_counter_macro(x, f):
     print('-'*20)
 
 start = 0
-def main(x0, swap_step=4, each_step=4):
+def main(x0, swap_step=4, each_step=4, print_only_nt=False):
     f = get_f()
     j = get_j()
 
@@ -165,6 +165,8 @@ def main(x0, swap_step=4, each_step=4):
     start = time.time()
     x = nt(f, j, x0)
     print_counter_macro(x, f)
+    if print_only_nt:
+        return 1
 
     start = time.time()
     x = mod_nt(f, j, x0)
@@ -257,6 +259,8 @@ def mod_nt(f, j, x0, eps=0.000001):
         if la.norm(delta) < eps:
             return (xk, k)
 
+        if (la.norm(delta) > 1e8) or (k > 200):
+            raise OverflowError
 
 def sw_nt(f, j, x0, ks, eps=0.000001):
     xk = x0
@@ -268,6 +272,10 @@ def sw_nt(f, j, x0, ks, eps=0.000001):
         xk = delta + xk
         if la.norm(delta) < eps:
             return (xk, k+1)
+
+        if (la.norm(delta) > 1e8):
+            raise OverflowError
+
     x = mod_nt(f, j, xk, eps=eps)
     return (x[0], x[1] + ks)
 
@@ -289,13 +297,40 @@ def hybr_nt(f, j, x0, step, eps=0.000001):
         if la.norm(delta) < eps:
             return (xk, k)
 
+        if (la.norm(delta) > 1e8) or (k > 200):
+            raise OverflowError
+
 
 if __name__ == "__main__":
     x0 = get_x0()
     main(x0, swap_step=3, each_step=4)
-    x0[4] = -0.2
-    main(x0, swap_step=4, each_step=5)
 
+    print('-'*20)
+    x0[4] = -0.2
+    main(x0, print_only_nt=True)
+
+    f = get_f()
+    j = get_j()
+    for swap_step in range(10):
+        print("*"*20)
+        start = time.time()
+        try:
+            x = sw_nt(f, j, x0, swap_step)
+            print('swap on step: ' + str(swap_step))
+            print_counter_macro(x, f)
+        except OverflowError:
+            pass
+
+
+    for each_step in range(1, 15):
+        print('*'*20)
+        start = time.time()
+        try:
+            x = hybr_nt(f, j, x0, each_step)
+            print('swap each ' + str(each_step) + 'th step')
+            print_counter_macro(x, f)
+        except OverflowError:
+            pass
 
 
 
