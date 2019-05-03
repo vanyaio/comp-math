@@ -6,6 +6,7 @@ import random
 from functools import reduce
 import os
 from math import sin, cos, sinh, exp, cosh
+import math
 import time
 
 #integrate.quad(lambda x: special.jv(2.5,x), 0, 4.5)
@@ -56,34 +57,99 @@ def s_newton_cotse(f, p, a, b, h, m):
 
 def richardson(f, p, a, b, h, m, r):
 	A = [[h[i]**(m+j) for j in range(r + 1)] for i in range(r + 1)]
+	for i in range(r + 1):
+		A[i][0] = -1.0
+
 	b = [-s_newton_cotse(f, p, a, b, h[i], m) for i in range(r + 1)]
 	x = la.solve(A, b)		
 	
 	return sum(x[i + 1] * (h[0] ** (m + i)) for i in range(r))
 
-def var1_main():
+def aitken(f, p, a, b, h, L, m):
+	h1 = h
+	h2 = h1 * L
+	h3 = h2 * L
+	s1 = s_newton_cotse(f, p, a, b, h1, m) 
+	s2 = s_newton_cotse(f, p, a, b, h2, m)
+	s3 = s_newton_cotse(f, p, a, b, h3, m)
+	if abs(s2 - s1) < 1e-9 or ((s3 - s2) / (s2 - s1)) < 0:
+		return -1
+		
+	return math.floor(-np.log((s3 - s2) / (s2 - s1)) / np.log(1/L))	
+
+
+def eps_from_step_with_ikf(f, p, a, b, h):
 	eps = 1e-6
-	L = 0.95
-	m = 
-	r = 
-	while richardson 
+	L = 0.9
+	m = 3 
+	r = 5
+	aitken_arr = []
+	while True: 
+		rich = richardson(f, p, a, b, [h * (L**i) for i in range(r + 1)], m, r)
+		if abs(rich) < eps:
+			break
+		h = h*L
+		try:
+			aitken_arr.append(aitken(f, p, a, b, h, L, m))
+		except OverflowError:
+			aitken_arr.append(-1)
+	return (h, aitken_arr)
+
+def get_h_opt(f, p, a, b, h):
+	eps = 1e-6
+	L = 0.5
+	#h = b - a
+	ms = 3
+	m = aitken(f, p, a, b, b - a, L, ms)
+	
+	h1 = h
+	h2 = h1 * L
+	s1 = s_newton_cotse(f, p, a, b, h1, m) 
+	s2 = s_newton_cotse(f, p, a, b, h2, m)
+	
+	return h * ((eps*(1 - ((1/L) ** -m))/abs(s2 - s1)) ** (1.0/m))
+
+def var1(f, p, a, b):
+	#0:
+	print(integrate.quad(lambda x: p(x)*f(x), a, b)[0])
+
+	
+	#1:
+	res1 = s_newton_cotse(f, p, a, b, b - a, 3)
+	print(res1)
+
+	#2:
+	h = 1.0 
+	res2 = eps_from_step_with_ikf(f, p, a, b, h)
+	h2 = res2[0]
+	m2_arr = res2[1]
+
+	print("1: " + str(s_newton_cotse(f, p, a, b, h2, 3)))	
+	print("2: " + str(h2))
+	print(m2_arr)
+
+	#3:
+	h_opt = get_h_opt(f, p, a, b, h)
+	print("h opt: " + str(h_opt))
+	res3 = eps_from_step_with_ikf(f, p, a, b, h_opt)
+	h3 = res3[0]
+	m3_arr = res3[1]
+
+	print("3: " + str(s_newton_cotse(f, p, a, b, h3, 3)))
+	print("4: " + str(h3))
+	print(m3_arr)
+
+
+	 
 if __name__ == "__main__":
-	f = lambda x: x**2
-	p = lambda x: 1.0
-	a = -10
-	b = 10
-	n = 10
-	print((integrate.quad(lambda x: f(x)*p(x), a, b))[0])
-	print('--'*10)
-	
-	print(ikf(f, p, a, b, n=10))
-	print('--'*10)
+	a = 1.5
+	b = 3.3
+	f = lambda x: 2*cos(2.5*x)*exp(x/3.0) + 4*sin(3.5*x)*exp(-3*x) + x
+	al = 1.0/3
+	bet = 0.0
+	p = lambda x: ((x - a) ** -al) * ((x - b) ** -bet)
 
-	print(kf_gauss(f, p, a, b, n=10))
-	
-
-
-
+	var1(f, p, a, b)
 
 
 
