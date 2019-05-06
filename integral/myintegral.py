@@ -63,7 +63,7 @@ def richardson(f, p, a, b, h, m, r, meth):
 	b = [-s_newton_cotse(f, p, a, b, h[i], 3, meth) for i in range(r + 1)]
 	x = la.solve(A, b)		
 	
-	return sum(x[i + 1] * (h[0] ** (m + i)) for i in range(r))
+	return sum(x[i + 1] * (h[r] ** (m + i)) for i in range(r))
 
 def aitken(f, p, a, b, h, L, m, meth):
 	h1 = h
@@ -90,10 +90,12 @@ def eps_from_step_with_icf(f, p, a, b, h, meth):
 		if abs(rich) < eps:
 			break
 		h = h*L
+		'''
 		try:
 			aitken_arr.append(aitken(f, p, a, b, h, L, m, meth))
 		except ValueError:
 			aitken_arr.append(-1337)
+		'''	
 	return (h, aitken_arr)
 
 def get_h_opt(f, p, a, b, h, meth):
