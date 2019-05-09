@@ -75,7 +75,7 @@ def aitken(f, p, a, b, h, L, m, meth):
 	#if abs(s2 - s1) < 1e-8 or ((s3 - s2) / (s2 - s1)) < 0:
 		#return -1337
 		
-	return -np.log((s3 - s2) / (s2 - s1)) / np.log(1/L)	
+	return (-np.log((s3 - s2) / (s2 - s1)) / np.log(1/L))	
 
 
 def eps_from_step_with_icf(f, p, a, b, h, meth):
@@ -86,6 +86,8 @@ def eps_from_step_with_icf(f, p, a, b, h, meth):
 	aitken_arr = []
 	while True:
 		m = aitken(f, p, a, b, h, L, 3, meth)
+		if m != m:
+			m = 3
 		rich = richardson(f, p, a, b, [h * (L**i) for i in range(r + 1)], m, r, meth)
 		if abs(rich) < eps:
 			break
@@ -110,7 +112,7 @@ def get_h_opt(f, p, a, b, h, meth):
 	s1 = s_newton_cotse(f, p, a, b, h1, ms, meth) 
 	s2 = s_newton_cotse(f, p, a, b, h2, ms, meth)
 	
-	return (h * ((eps*(1 - ((1/L) ** -m))/abs(s2 - s1)) ** (1.0/m)), m)
+	return (0.85 * h * ((eps*(1 - ((1/L) ** -m))/abs(s2 - s1)) ** (1.0/m)), m)
 
 def var1(f, p, a, b, meth):
 	#0:
