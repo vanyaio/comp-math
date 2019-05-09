@@ -25,13 +25,14 @@ def rk_step(f, x0, h, y0, s=2):
 		#K += [np.array([y0 + h * sum(a[i][j] * K[j] for j in range(i - 1))]) for i in range(s)]
 		for i in range(s):
 			K[i] = f(x0 + c[i] * h, y0 + h * sum(a[i][j] * K[j] for j in range(i - 1)))
+		return y0 + h * sum(b[i] * K[i] for i in range(s))
+
 	if s == 4:
 		K[0] = f(x0, y0) 
 		K[1] = f(x0 + 0.5 * h, y0 + 0.5 * h * K[0])
 		K[2] = f(x0 + 0.5 * h, y0 + 0.5 * h * K[1])
 		K[3] = f(x0 + h, y0 + h * K[2])
-
-	return y0 + h * sum(b[i] * K[i] for i in range(s))
+		return y0 + h * ( (1.0/6)*K[0] + (1.0/3) * K[1] +(1.0/3) * K[2] + (1.0/6) * K[3])		
 
 def fun(x, y):
 	A = 1.0
@@ -40,27 +41,30 @@ def fun(x, y):
 	
 	res = []
 	res.append(2 * x * (y[1] ** (1.0/B)) * y[3])
-	res.append(2 * B * exp( (B / C) * (y[2] - A)) * y[3])
+	res.append(2 * B * x * exp( (B / C) * (y[2] - A)) * y[3])
 	res.append(2 * C * x * y[3])
 	res.append(-2 * x * np.log(y[0]))
-	
+		
 	return np.array(res)
 
 def rk(f, y0, a, b, h, s=2):
-	y = []
+	y = [y0]
 	x_step = a
 	y_step = y0
-	while x_step < b:
+	
+	it = 1
+	while x_step < (b - h):
 		y.append(rk_step(f, x_step, h, y_step, s))
 		y_step = np.array(y[len(y)-1])
 		x_step += h
-	
+		it += 1
+
 	return np.array(y) #?np.array
 
 def true_solution(a, b, h):
 	A = 1.0
 	B = 1.5
-	C = -2
+	C = -2.0
 	
 	y1 = lambda x: exp(sin(x**2))
 	y2 = lambda x: exp(B * sin(x**2))
@@ -76,18 +80,67 @@ def true_solution(a, b, h):
 	
 	return np.array(y)
 
+def runge_full_error(yn, y2n, p=2):
+	return la.norm(y2n - yn) / ((2 ** p) - 1)
+def runge_local_error(ys, yss, p=2):
+	return la.norm(yss - ys) / (-(2 ** -p) + 1)
+def get_h_tol(h, rn, p=2):
+	return h * ((tol / rn) ** (1.0 / p))
+
+def rk_with_step(f, y0, a, b, h0=, s=2,p=2):
+	tol = 
+	y = [y0]
+	x_step = a
+	y_step = y0
+
+	h = h0
+	while x_step < (b - h):
+		y1 = rk_step(f, x_step, h, y_step, s)
+		yss = rk_step(f, x_step + h, h, y1, s)
+		ys = rk_step(f, x_step, h, y_step, s)
+		rn = runge_local_error(ys, yss, p)
+		
+		if rn > (tol * (2 ** p)):	
+			h *= 0.5			
+			continue
+
+		if (tol < rn) and (rn <= (tol * (2 ** p))):
+			h *= 0.5
+			y_step = yss
+			continue
+
+		if (tol * (2 ** (-p-1)) <= rn) and (rn <= tol):
+			y_step = ys
+			continue
+		
+		if rn < tol * (2 ** (-p-1)):			
+			h = 2 * h
+			y_step = ys
+
+
 def main1():
 	A = 1.0
 	a = 0.0
 	b = 5.0
 	y0 = np.array([1.0, 1.0, 1.0, A])
-	h = (b - a) / 8
-	
+	#h = (b - a) / 8
+	h = 1.0 / (2 ** 1)
 	print("true solution:")
-	print(true_solution(a, b, h))
+	res_true = true_solution(a, b, h)
+	print(res_true)
 
 	res1 = rk(fun, y0, a, b, h)
-	print("2s solution: " + str(res1))	 
+	print("2s solution:")
+	print(res1)	 
+	
+	res2 = rk(fun, y0, a, b, h, s=4)
+	print("4s solution:")
+	print(res2)	 
+	
+	print("diff (true&2s):")
+	for i in range(len(res_true) - 1):
+		print(la.norm(res1[i] - res_true[i]))
+
 
 if __name__ == "__main__":
 	main1()
