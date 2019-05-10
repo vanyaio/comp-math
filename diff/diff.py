@@ -84,7 +84,7 @@ def runge_full_error(yn, y2n, p=2):
 	return la.norm(y2n - yn) / ((2 ** p) - 1)
 def runge_local_error(ys, yss, p=2):
 	return la.norm(yss - ys) / (-(2 ** -p) + 1)
-def get_h_tol(h, rn, p=2):
+def get_h_tol(h, rn, p=2, tol=1e-5):
 	return h * ((tol / rn) ** (1.0 / p))
 
 def rk_with_step(f, y0, a, b, h0=1.0, s=2,p=2):
@@ -126,7 +126,7 @@ def main1():
 	b = 5.0
 	y0 = np.array([1.0, 1.0, 1.0, A])
 	#h = (b - a) / 8
-	h = 1.0 / (2 ** 1)
+	h = 1.0 / (2 ** 10)
 	print("true solution:")
 	res_true = true_solution(a, b, h)
 	print(res_true)
@@ -134,6 +134,16 @@ def main1():
 	res1 = rk(fun, y0, a, b, h)
 	print("2s solution:")
 	print(res1)	 
+	res12 = rk(fun, y0, a, b, h * 0.5)
+	print("2s2 solution:")
+	print(res12)	 
+	rn = runge_full_error(res1[-1], res12[-1])
+	h_tol = get_h_tol(rn, h)
+	print("h tol: " + str(h_tol))
+	
+	res_h_tol = rk(fun, y0, a, b, h_tol)
+	print("h tol:")
+	print(res_h_tol)
 	
 	res2 = rk(fun, y0, a, b, h, s=4)
 	print("4s solution:")
