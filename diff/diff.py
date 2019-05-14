@@ -176,7 +176,6 @@ def main(s=2):
 	res_true = true_solution(a, b, h)
 	print(res_true)
 	#1:
-	'''
 	x1 = []
 	y1 = []
 	x2 = []
@@ -189,6 +188,10 @@ def main(s=2):
 		y1.append(log(r, 2))
 		x2.append(k + k0)
 		y2.append(-s * (k + k0))
+		
+		print(str(k0 + k) + " solution:")
+		print(res[-1])
+
 	x1 = np.array(x1)
 	y1 = np.array(y1)
 	x2 = np.array(x2)
@@ -197,28 +200,7 @@ def main(s=2):
 	plt.plot(x2, y2, label='linear f')
 	plt.legend()
 	plt.show()
-	'''
 
-	#2:
-	res1 = rk(fun, y0, a, b, h, s=s)
-	print(str(s) + "s solution:")
-	print(res1)	 
-	res12 = rk(fun, y0, a, b, h * 0.5, s=s)
-	print(str(s) + "s h/2 solution:")
-	print(res12)	 
-	rn = runge_full_error(res1[-1], res12[-1], p=s)
-	h_tol = get_h_tol(h, rn, p=s)
-	print("h tol: " + str(h_tol))
-	
-	res_h_tol = rk(fun, y0, a, b, h_tol, s=s)
-	print("h tol solution:")
-	print(res_h_tol)
-
-	print("h_tol and true solution compare:")
-	print(la.norm(res_h_tol[-1] - res_true[-1]))
-
-	xa = []
-	ya = []
 	A = 1.0
 	B = 1.5
 	C = -2.0
@@ -226,7 +208,27 @@ def main(s=2):
 	y2 = lambda x: exp(B * sin(x**2))
 	y3 = lambda x: C * sin(x**2) + A
 	y4 = lambda x: cos(x**2)
+	
+	#2:
+	res1 = rk(fun, y0, a, b, h, s=s)
+	#print(str(s) + "s solution:")
+	#print(res1)	 
+	res12 = rk(fun, y0, a, b, h * 0.5, s=s)
+	#print(str(s) + "s h/2 solution:")
+	#print(res12)	 
+	rn = runge_full_error(res1[-1], res12[-1], p=s)
+	h_tol = get_h_tol(h, rn, p=s)
+	print("h tol: " + str(h_tol))
+	
+	res_h_tol = rk(fun, y0, a, b, h_tol, s=s)
+	print("h tol solution:")
+	print(res_h_tol[-1])
 
+	print("h_tol and true solution compare:")
+	print(la.norm(res_h_tol[-1] - res_true[-1]))
+
+	xa = []
+	ya = []
 	x_step = a
 	for y_tol in res_h_tol:
 		xa.append(x_step)
@@ -235,38 +237,41 @@ def main(s=2):
 	xa = np.array(xa)
 	ya = np.array(ya)
 	plt.plot(xa, ya)
+	plt.title("s=" + str(s) + " solutuion norm with h tol")
+	plt.legend()
 	plt.show()
 
 	#AUTO  STEP PART
 	res3 = rk_with_step_atol(fun, y0, a, b, s=s, p=s)
-	'''
-	for i in range(len(res3) - 1):
-		y = res3[i][0]
-		x = res3[i][1]	
-		print("*"*20)
-		true_y = np.array([y1(x), y2(x), y3(x), y4(x)])
-		print(y)
-		print(true_y)
-		print(y - true_y)	
-	'''
+	
 	y = res3[-1][0]
-	print(len(res3))
+	print("steps: " + str(len(res3)))
 	print("solutuion with auto step:")
 	print(y)
-	#print("true solut:")
-	#print(np.array([y1(x), y2(x), y3(x), y4(x)]))
 	
 	#1
-	'''
-	xa = []
-	ya = []
-	for sol in res3:
-		xa.append(sol[1])
-		ya.append(sol[0])
-	xa = np.array(xa)
-	ya = np.array(ya)
-	plt.plot
-	'''
+	yfun = [y1, y2, y3, y4]
+	for i in range(4):
+		xa = []
+		ya = []
+		xas = []
+		yas = []
+		for sol in res3:
+			x_step = sol[1]
+			y_res = sol[0][i]		
+			y_true = yfun[i](x_step)
+			xa.append(x_step)
+			xas.append(x_step)
+			ya.append(y_res)
+			yas.append(y_true)
+		label1 = str(i) + " res"
+		plt.plot(np.array(xa), np.array(ya), label=label1)
+		label2 = str(i) + " true"
+		plt.plot(np.array(xas), np.array(yas), label=label2)
+	
+	plt.title("s=" + str(s) + " solution with auto step")
+	plt.legend()
+	plt.show()
 	#2
 	xa = []
 	ya = []
@@ -276,8 +281,10 @@ def main(s=2):
 		xa.append(xnow)
 		ya.append(xnext - xnow)
 	xa = np.array(xa)
-	ya = np.array(ya)
+	ya = np.array(ya)	
+	plt.title("s=" + str(s) + " h len")
 	plt.plot(xa, ya)
+	plt.legend()
 	plt.show()
 
 	#3
@@ -289,7 +296,9 @@ def main(s=2):
 		ya.append(la.norm(np.array([y1(x_step), y2(x_step), y3(x_step), y4(x_step)]) - sol[0]))
 	
 	xa = np.array(xa)
-	ya = np.array(ya)
+	ya = np.array(ya)	
+	plt.title("s=" + str(s) + " solution norm with auto step")
+	plt.legend()
 	plt.plot(xa, ya)
 	plt.show()
 
@@ -297,13 +306,17 @@ def main(s=2):
 	xa = []
 	ya = []
 	global Counter
-	rtol_list = [1e-6, 1e-7, 1e-8]
+	rtol_list = [1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12]
 	for rtol in rtol_list:
 		Counter = 0
 		res = rk_with_step_atol(fun, y0, a, b, s=s, p=s, rtol=rtol)
+		print("sol with rtol=" + str(rtol))
+		print(res[-1])
 		xa.append(log(rtol, 2))		
 		ya.append(log(Counter, 2))
 
+	plt.title("s=" + str(s) + " F(rtol)")
+	plt.legend()
 	plt.plot(np.array(xa), np.array(ya))
 	plt.show()
 
