@@ -27,7 +27,7 @@ def rk_step(f, x0, h, y0, s=2):
 		#K = [f(x0 + c[i] * h)] 
 		#K += [np.array([y0 + h * sum(a[i][j] * K[j] for j in range(i - 1))]) for i in range(s)]
 		for i in range(s):
-			K[i] = f(x0 + c[i] * h, y0 + h * sum(a[i][j] * K[j] for j in range(i - 1)))
+			K[i] = f(x0 + c[i] * h, y0 + h * sum(a[i][j] * K[j] for j in range(i)))
 		return y0 + h * sum(b[i] * K[i] for i in range(s))
 
 	if s == 4:
@@ -58,12 +58,12 @@ def rk(f, y0, a, b, h, s=2):
 	x_step = a
 	y_step = y0
 	
-	it = 1
 	while x_step < b:
+		if (x_step + h > b):
+			h = b - x_step
 		y.append(rk_step(f, x_step, h, y_step, s))
 		y_step = np.array(y[len(y)-1])
 		x_step += h
-		it += 1
 
 	return np.array(y) #?np.array
 
@@ -80,10 +80,10 @@ def true_solution(a, b, h):
 	#return np.array([y1(x), y2(x), y3(x), y4(x)])
 	y = []
 	x = a
-	while x <= b:
+	while x < b:
 		y.append(np.array([y1(x), y2(x), y3(x), y4(x)]))
 		x += h
-	
+	y.append(np.array([y1(b), y2(b), y3(b), y4(b)]))
 	return np.array(y)
 
 def runge_full_error(yn, y2n, p=2):
@@ -100,7 +100,10 @@ def rk_with_step(f, y0, a, b, h0=1.0, s=2,p=2):
 	y_step = y0
 
 	h = h0
-	while x_step < b:
+	while x_step < b:		
+		if (x_step + h > b):
+			h = b - x_step
+
 		y1 = rk_step(f, x_step, h * 0.5, y_step, s)
 		yss = rk_step(f, x_step + h * 0.5, h * 0.5, y1, s)
 		ys = rk_step(f, x_step, h, y_step, s)
@@ -174,7 +177,7 @@ def main(s=2):
 
 	print("true solution:")
 	res_true = true_solution(a, b, h)
-	print(res_true)
+	print(res_true[-1])
 	#1:
 	x1 = []
 	y1 = []
@@ -211,11 +214,7 @@ def main(s=2):
 	
 	#2:
 	res1 = rk(fun, y0, a, b, h, s=s)
-	#print(str(s) + "s solution:")
-	#print(res1)	 
 	res12 = rk(fun, y0, a, b, h * 0.5, s=s)
-	#print(str(s) + "s h/2 solution:")
-	#print(res12)	 
 	rn = runge_full_error(res1[-1], res12[-1], p=s)
 	h_tol = get_h_tol(h, rn, p=s)
 	print("h tol: " + str(h_tol))
@@ -224,16 +223,25 @@ def main(s=2):
 	print("h tol solution:")
 	print(res_h_tol[-1])
 
+	res_true = true_solution(a, b, h_tol)
 	print("h_tol and true solution compare:")
 	print(la.norm(res_h_tol[-1] - res_true[-1]))
 
 	xa = []
 	ya = []
+	
 	x_step = a
-	for y_tol in res_h_tol:
+	for i in range(len(res_h_tol)):
 		xa.append(x_step)
-		ya.append(la.norm(np.array([y1(x_step), y2(x_step), y3(x_step), y4(x_step)]) - y_tol))
-		x_step += h_tol		
+		ya.append(la.norm(res_true[i] - res_h_tol[i]))
+		'''
+		print("**********")
+		print(x_step)
+		print(res_true[i])
+		print(res_h_tol[i])
+		'''
+		x_step += h_tol
+	
 	xa = np.array(xa)
 	ya = np.array(ya)
 	plt.plot(xa, ya)
@@ -272,6 +280,7 @@ def main(s=2):
 	plt.title("s=" + str(s) + " solution with auto step")
 	plt.legend()
 	plt.show()
+
 	#2
 	xa = []
 	ya = []
@@ -280,6 +289,10 @@ def main(s=2):
 		xnext = res3[i+1][1]
 		xa.append(xnow)
 		ya.append(xnext - xnow)
+		'''	
+		print("******")
+		print(xnow, xnext - xnow)
+		'''
 	xa = np.array(xa)
 	ya = np.array(ya)	
 	plt.title("s=" + str(s) + " h len")
@@ -306,12 +319,13 @@ def main(s=2):
 	xa = []
 	ya = []
 	global Counter
-	rtol_list = [1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12]
+	rtol_list = [1e-5, 1e-6, 1e-7, 1e-8]
 	for rtol in rtol_list:
 		Counter = 0
 		res = rk_with_step_atol(fun, y0, a, b, s=s, p=s, rtol=rtol)
 		print("sol with rtol=" + str(rtol))
 		print(res[-1])
+		print("counter: " + str(Counter))
 		xa.append(log(rtol, 2))		
 		ya.append(log(Counter, 2))
 
